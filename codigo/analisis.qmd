@@ -1,0 +1,61 @@
+---
+title: "Análisis de datos agropecuarios sobre los paises integrantes del G20"
+author: "Federico Borbiconi"
+format: 
+  html:
+    embed-resources: true
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+## Librerías
+
+```{r}
+library(readxl)
+library(tidyverse)
+library(leaflet)
+library(sf)
+```
+
+## Lectura de los datos
+
+```{r}
+archivos = list.files("datos_crudos")
+
+for (archivo in archivos){
+  assign(str_sub(archivo, end = -5),
+         read_excel(paste0("datos_crudos/",archivo), 
+    skip = 2))
+}
+```
+
+## Limpieza y ordenamiento
+
+De todos los registros que contamos, nos enfocaremos en estudiar la situación de los 19 países que forman parte del G20 para el año 2021 (Año más reciente para el que se tienen datos)
+
+```{r}
+G20 = c("Alemania", "Arabia Saudita", "Argentina", "Australia", "Brasil", "Canadá", "China", "Corea, República de", "Estados Unidos", "Francia", "India", "Indonesia", "Italia", "Japón", "México", "Reino Unido", "Federación de Rusia", "Sudáfrica", "Turquía")
+
+for (archivo in archivos){
+  archivo <- str_sub(archivo, end = -5)
+  
+  assign(archivo, 
+         get(archivo) %>% 
+           filter(`Country Name` %in% G20) %>% 
+           rename("pais" = "Country Name") %>%
+           rename_with(~archivo, .cols = "2021") %>% 
+           select("pais", all_of(archivo)))            
+    
+}
+ rm(archivo, archivos, G20)
+```
+
+Creamos el data frame combinado con los datos de los 19 paises
+
+```{r}
+Datos_limpios <- bind_cols(Area_de_tierra, Area_selvatica, Consumo_de_fertilizantes, Participacion_del_agro_PBI, Rendimiento_cereales, Tierra_utilizada_para_la_producción_de_cereales, Tierras_agricolas, Tierras_destinadas_al_cultivo_de_manera_permanente) %>% 
+  select(c(1, seq(2,16,2))) %>% 
+  rename(pais = pais...1)
+
+```
