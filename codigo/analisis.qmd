@@ -16,6 +16,7 @@ library(readxl)
 library(tidyverse)
 library(leaflet)
 library(sf)
+library(spData)
 ```
 
 ## Lectura de los datos
@@ -58,4 +59,25 @@ Datos_limpios <- bind_cols(Area_de_tierra, Area_selvatica, Consumo_de_fertilizan
   select(c(1, seq(2,16,2))) %>% 
   rename(pais = pais...1)
 
+```
+
+Se carga el data set World del paquete Spdata para poder graficar mapas.
+
+```{r}
+data(world)
+```
+
+Cómo el data frame world tiene los nombres en inglés, crearemos una nueva columna de nuestro data frame que contenga los nombres en inglés para poder vincularlos.
+
+```{r}
+Datos_limpios$pais_ingles <- c("Argentina", "Australia", "Brazil", "Canada", "China", "Germany", "France", "United Kingdom", "Indonesia", "India", "Italy", "Japan", "Republic of Korea","Mexico", "Russian Federation", "Saudi Arabia", "Turkey", "United States", "South Africa")
+
+Datos_limpios <- Datos_limpios %>% 
+  mutate(pais = ifelse(pais == "Corea, República de", "Corea del Sur", pais))
+```
+
+Finalmente creamos el data frame que nos permitirá realizar los mapas
+
+```{r}
+datos_espaciales <- left_join(world, Datos_limpios, by = join_by("name_long" == "pais"))
 ```
