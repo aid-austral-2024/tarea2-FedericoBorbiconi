@@ -17,6 +17,9 @@ library(tidyverse)
 library(leaflet)
 library(sf)
 library(spData)
+library(tmap)
+library(tmaptools)
+library(htmltools)
 ```
 
 ## Lectura de los datos
@@ -49,7 +52,7 @@ for (archivo in archivos){
            select("pais", all_of(archivo)))            
     
 }
- rm(archivo, archivos, G20)
+
 ```
 
 Creamos el data frame combinado con los datos de los 19 paises
@@ -79,5 +82,286 @@ Datos_limpios <- Datos_limpios %>%
 Finalmente creamos el data frame que nos permitirá realizar los mapas
 
 ```{r}
-datos_espaciales <- left_join(world, Datos_limpios, by = join_by("name_long" == "pais"))
+datos_espaciales <- left_join(world, Datos_limpios, by = join_by("name_long" == "pais_ingles"))
+```
+
+## Análisis univariado
+
+### Área de tierra
+
+```{r}
+Datos_limpios %>% 
+  summarise(Mínimo = min(`Area_de_tierra`),
+            Mediana = median(`Area_de_tierra`),
+            Promedio = mean(`Area_de_tierra`),
+            Máximo = max (`Area_de_tierra`),
+            'Desvío Estándar' = sd(`Area_de_tierra`),
+            RI = IQR(`Area_de_tierra`))
+```
+
+```{r}
+Datos_limpios %>% 
+  ggplot() + 
+  aes(x = `Area_de_tierra`) +
+  geom_histogram(breaks = seq(0,20000000,5000000), fill="dodgerblue", color = "black") +
+  theme_bw()
+  
+```
+
+### Área Selvática
+
+```{r}
+Datos_limpios %>% 
+  summarise(Mínimo = min(`Area_selvatica`),
+            Mediana = median(`Area_selvatica`),
+            Promedio = mean(`Area_selvatica`),
+            Máximo = max (`Area_selvatica`),
+            'Desvío Estándar' = sd(`Area_selvatica`),
+            RI = IQR(`Area_selvatica`))
+```
+
+```{r}
+Datos_limpios %>% 
+  ggplot() + 
+  aes(x = `Area_selvatica`) +
+  geom_histogram(breaks = seq(0,80,10), fill="dodgerblue", color = "black") +
+  theme_bw()
+```
+
+### Participación del agro en el PBI
+
+```{r}
+Datos_limpios %>% 
+  summarise(Mínimo = min(`Participacion_del_agro_PBI`, na.rm = T),
+            Mediana = median(`Participacion_del_agro_PBI`, na.rm = T),
+            Promedio = mean(`Participacion_del_agro_PBI`, na.rm = T),
+            Máximo = max (`Participacion_del_agro_PBI`, na.rm = T),
+            'Desvío Estándar' = sd(`Participacion_del_agro_PBI`, na.rm = T),
+            RI = IQR(`Participacion_del_agro_PBI`, na.rm = T))
+```
+
+```{r}
+Datos_limpios %>% 
+  ggplot() + 
+  aes(x = `Participacion_del_agro_PBI`) +
+  geom_histogram(breaks = seq(0,20,4), fill="dodgerblue", color = "black") +
+  theme_bw()
+```
+
+### Tierra utilizada para la producción de cereales
+
+```{r}
+Datos_limpios %>% 
+  summarise(Mínimo = min(`Tierra_utilizada_para_la_producción_de_cereales`, na.rm = T),
+            Mediana = median(`Tierra_utilizada_para_la_producción_de_cereales`, na.rm = T),
+            Promedio = mean(`Tierra_utilizada_para_la_producción_de_cereales`, na.rm = T),
+            Máximo = max (`Tierra_utilizada_para_la_producción_de_cereales`, na.rm = T),
+            'Desvío Estándar' = sd(`Tierra_utilizada_para_la_producción_de_cereales`, na.rm = T),
+            RI = IQR(`Tierra_utilizada_para_la_producción_de_cereales`, na.rm = T))
+```
+
+```{r}
+Datos_limpios %>% 
+  ggplot() + 
+  aes(x = `Tierra_utilizada_para_la_producción_de_cereales`) +
+  geom_histogram(breaks = seq(0,105000000,105000000/4), fill="dodgerblue", color = "black") +
+  theme_bw()
+```
+
+```{r}
+# Sin India y China
+Datos_limpios %>% 
+  filter(!(pais %in% c("India", "China"))) %>% 
+  ggplot() + 
+  aes(x = `Tierra_utilizada_para_la_producción_de_cereales`) +
+  geom_histogram(breaks = seq(0,60000000,60000000/5), fill="dodgerblue", color = "black") +
+  theme_bw()
+```
+
+### Rendimiento de cereales
+
+```{r}
+Datos_limpios %>% 
+  summarise(Mínimo = min(`Rendimiento_cereales`, na.rm = T),
+            Mediana = median(`Rendimiento_cereales`, na.rm = T),
+            Promedio = mean(`Rendimiento_cereales`, na.rm = T),
+            Máximo = max (`Rendimiento_cereales`, na.rm = T),
+            'Desvío Estándar' = sd(`Rendimiento_cereales`, na.rm = T),
+            RI = IQR(`Rendimiento_cereales`, na.rm = T))
+```
+
+```{r}
+Datos_limpios %>% 
+  ggplot() + 
+  aes(x = `Rendimiento_cereales`) +
+  geom_histogram(breaks = seq(0,9000,1500), fill="dodgerblue", color = "black") +
+  theme_bw()
+```
+
+### Consumo de fertilizantes
+
+```{r}
+Datos_limpios %>% 
+  summarise(Mínimo = min(`Consumo_de_fertilizantes`, na.rm = T),
+            Mediana = median(`Consumo_de_fertilizantes`, na.rm = T),
+            Promedio = mean(`Consumo_de_fertilizantes`, na.rm = T),
+            Máximo = max (`Consumo_de_fertilizantes`, na.rm = T),
+            'Desvío Estándar' = sd(`Consumo_de_fertilizantes`, na.rm = T),
+            RI = IQR(`Consumo_de_fertilizantes`, na.rm = T))
+```
+
+```{r}
+Datos_limpios %>% 
+  ggplot() + 
+  aes(x = `Consumo_de_fertilizantes`) +
+  geom_histogram(breaks = seq(0,400,100), fill="dodgerblue", color = "black") +
+  theme_bw()
+```
+
+## Análisis bivariado
+
+### Rendimiento vs. consumo de fertilizante
+
+```{r}
+Datos_limpios %>% 
+  ggplot() + 
+  aes(x = `Consumo_de_fertilizantes`, y = `Rendimiento_cereales`) +
+  geom_point() +
+  theme_bw()
+```
+
+### Rendimiento vs. Tierra cereales
+
+```{r}
+Datos_limpios %>% 
+  ggplot() + 
+  aes(x = `Tierra_utilizada_para_la_producción_de_cereales`, y = `Rendimiento_cereales`) +
+  geom_point() +
+  theme_bw()
+```
+
+### Consumo de fertilizantes vs. Tierra cereales
+
+```{r}
+Datos_limpios %>% 
+  ggplot() + 
+  aes(x = `Tierra_utilizada_para_la_producción_de_cereales`, y = `Consumo_de_fertilizantes`) +
+  geom_point() +
+  theme_bw()
+```
+
+## Contrucción de mapas
+
+```{r}
+tmap_mode("view")
+
+datos_espaciales %>% 
+  filter(pais %in% c(G20, "Corea del Sur")) %>% 
+  tm_shape() + 
+  tm_fill(id = "ID", col = "Consumo_de_fertilizantes", n = 7 ,palette = get_brewer_pal("YlOrBr", contrast = c(0.3, 0.7)), alpha = 0.75) +
+  tm_borders("black", lwd = 2) + 
+  tm_basemap("OpenStreetMap")
+```
+
+```{r}
+g20_espacial = datos_espaciales %>% 
+  filter(pais %in% c(G20, "Corea del Sur"))
+
+textos <- paste0(
+  "<b>País:</b> ", 
+  g20_espacial$pais, 
+  "<br><b>Participación del agro en el PBI:</b> ",
+  paste0(format(round(g20_espacial$Participacion_del_agro_PBI, 2), decimal.mark = ","), "%"),
+  "<br><b>Sup. en km<sup>2</sup>:</b> ", 
+  format(round(g20_espacial$Area_de_tierra,0), big.mark = "."),
+  "<br><b>Área selvática:</b> ",
+  paste0(format(round(g20_espacial$Area_selvatica, 2), decimal.mark = ","), "%"),
+  "<br><b>Superficie cereales (ha):</b> ",
+  format(g20_espacial$Tierra_utilizada_para_la_producción_de_cereales, big.mark = "."),
+  "<br><b>Rendimiento cereales (kg/ha):</b> ",
+  format(g20_espacial$Rendimiento_cereales, big.mark = ".", decimal.mark = ","),
+  "<br><b>Consumo de fertilizantes (kg/ha):</b> ",
+  format(round(g20_espacial$Consumo_de_fertilizantes, 2), decimal.mark = ",")
+)
+
+paleta1 <- colorNumeric(
+  palette = c("gold3", "firebrick"), 
+  domain = g20_espacial$Area_de_tierra
+)
+
+paleta2 <- colorNumeric(
+  palette = c("gold3", "firebrick"), 
+  domain = g20_espacial$Consumo_de_fertilizantes
+)
+
+paleta3 <- colorNumeric(
+  palette = c("gold3", "firebrick"),  
+  domain = g20_espacial$Rendimiento_cereales
+)
+
+paleta4 <- colorNumeric(
+  palette = c("gold3", "#1f8a00"),  
+  domain = g20_espacial$Area_selvatica
+)
+
+paleta5 <- colorNumeric(
+  palette = c("gold3", "firebrick"),  
+  domain = g20_espacial$Participacion_del_agro_PBI
+)
+
+paleta6 <- colorNumeric(
+  palette = c("gold3", "firebrick"),  
+  domain = g20_espacial$Tierra_utilizada_para_la_producción_de_cereales
+)
+
+g20_espacial %>% 
+  leaflet() %>%
+  addPolygons(
+    color = ~paleta5(Participacion_del_agro_PBI), 
+    label = ~lapply(as.list(textos), HTML), 
+    weight = 2, 
+    fillOpacity = 1,
+    group = "Participación del agro en el PBI") %>%
+  
+  addPolygons(
+    color = ~paleta1(Area_de_tierra), 
+    label = ~lapply(as.list(textos), HTML), 
+    weight = 2, 
+    fillOpacity = 1,
+    group = "Superficie total") %>%
+  
+  addPolygons(
+    color = ~paleta4(Area_selvatica), 
+    label = ~lapply(as.list(textos), HTML), 
+    weight = 2, 
+    fillOpacity = 1,
+    group = "Área selvática") %>%
+  
+  addPolygons(
+    color = ~paleta6(Tierra_utilizada_para_la_producción_de_cereales), 
+    label = ~lapply(as.list(textos), HTML), 
+    weight = 2, 
+    fillOpacity = 1,
+    group = "Superficie cereales") %>%
+  
+  addPolygons(
+    color = ~paleta3(Rendimiento_cereales), 
+    label = ~lapply(as.list(textos), HTML), 
+    weight = 2, 
+    fillOpacity = 1,
+    group = "Rendimiento cereales") %>%
+  
+  addPolygons(
+    color = ~paleta2(Consumo_de_fertilizantes), 
+    label = ~lapply(as.list(textos), HTML), 
+    weight = 2, 
+    fillOpacity = 1,
+    group = "Consumo de fertilizantes") %>%
+
+  addLayersControl(
+    overlayGroups = c("Participación del agro en el PBI", "Superficie total", "Área selvática", "Superficie cereales", "Rendimiento cereales", "Consumo de fertilizantes"),
+    options = layersControlOptions(collapsed = FALSE)
+  ) %>%
+  addProviderTiles("Jawg.Dark")
+
 ```
