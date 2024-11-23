@@ -1,15 +1,53 @@
 ---
 title: "Análisis de datos agropecuarios sobre los paises integrantes del G20"
 author: "Federico Borbiconi"
-format: 
+date: today
+lang: es
+toc: true
+fig-align: center
+number-sections: true
+code-line-numbers: true
+format:
   html:
     embed-resources: true
+    theme: 
+      dark: darkly
+      light: lumen
 editor: visual
 editor_options: 
   chunk_output_type: console
+execute: 
+  warning: false
+  message: false
 ---
 
+## Introducción
+
+El sector agropecuario es fundamental para la economía mundial debido a su rol en la producción de alimentos, el suministro de materias primas y su impacto en la seguridad alimentaria. Representa un pilar para muchas economías, especialmente en países en desarrollo, donde genera empleo para millones de personas y contribuye significativamente al PIB. Además, es un motor clave del comercio internacional, siendo los productos agrícolas y sus derivados importantes componentes de las exportaciones globales.
+
+La agricultura también está intrínsecamente ligada a desafíos globales como el cambio climático, la sostenibilidad ambiental y la innovación tecnológica. Inversiones en prácticas agrícolas sostenibles no solo mejoran la productividad, sino que también mitigan los impactos ambientales, fortaleciendo la resiliencia de las economías ante crisis climáticas o sanitarias. En resumen, el sector agro es vital no solo para el crecimiento económico, sino también para garantizar un desarrollo sostenible y equilibrado a nivel mundial.
+
+En particular, en esta ocasión nos centraremos en estudiar la situación del sector agrícola para los 19 países que conforman el G20. Para ello, se utilizarán datos publicados por el Banco Mundial en su página web [World Bank Open Data](https://datos.bancomundial.org/) . Las variables a analizar son las siguientes:
+
+-   **País:** Nombre oficial del país en español
+
+-   **Participación agro en el PBI:** Porcentaje de contribución del sector agrícola al PBI del país
+
+-   **Área de Tierra:** Superficie total del país medida en $km^2$
+
+-   **Área selvática:** Porcentaje de superficie forestal sobre el total del país
+
+-   **Superficie cereales:** Área cosechada de trigo, arroz, maíz, cebada, avena, centeno, mijo, sorgo, trigo sarraceno y mezcla de cereales medida en $ha$
+
+-   **Rendimiento cereales:** Rendimiento de los cereales medidos en $kg/ha$
+
+-   **Consumo de fertilizantes:** Consumo de fertilizantes medidos es $kg/ha$ de tierra cultivable
+
+El análisis principal estará centrado en la situación registrada en el año 2021, último año para el cual se cuentan con registros completos para la mayoría de países.
+
 ## Librerías
+
+A continuación se presentan las librerías necesarias para la lectura, limpieza y posterior análisis de los datos publicados por el Banco Mundial para el sector agro.
 
 ```{r}
 library(readxl)
@@ -17,14 +55,17 @@ library(tidyverse)
 library(leaflet)
 library(sf)
 library(spData)
-library(tmap)
 library(tmaptools)
 library(htmltools)
+library(gganimate)
 ```
 
 ## Lectura de los datos
 
+Se leen mediante la función `readxl` los 6 conjuntos de datos almacenados en archivos `.xls` en la carpeta `datos_crudos`
+
 ```{r}
+setwd(here::here())
 archivos = list.files("datos_crudos")
 
 for (archivo in archivos){
@@ -36,35 +77,57 @@ for (archivo in archivos){
 
 ## Limpieza y ordenamiento
 
-De todos los registros que contamos, nos enfocaremos en estudiar la situación de los 19 países que forman parte del G20 para el año 2021 (Año más reciente para el que se tienen datos)
+Lo primero que se identificó al analizar los conjuntos de datos es que Corea del Sur aparece en los registros como Corea, República de, por lo que se corregirá para facilitar el análisis.
+
+A su vez, se tiene que Canadá no tiene datos de la participación del agro en el PBI para 2021, por lo que dicho dato se imputará considerando el registro de los últimos 5 años ya que se entiende que no es un dato que pueda tener gran variabilidad en un corto período de tiempo.
+
+Una vez corregidos estos problemas, se crea un data set que conserva los datos de todos los años de las mediciones del área selvática para los 19 países del G20 y para todos los data sets (incluido el de área selvática) solo nos quedamos con el nombre del país y su medición en 2021.
 
 ```{r}
-G20 = c("Alemania", "Arabia Saudita", "Argentina", "Australia", "Brasil", "Canadá", "China", "Corea, República de", "Estados Unidos", "Francia", "India", "Indonesia", "Italia", "Japón", "México", "Reino Unido", "Federación de Rusia", "Sudáfrica", "Turquía")
+# Se define un vector con los nombres de los países que conforman el G20
+G20 = c("Alemania", "Arabia Saudita", "Argentina", "Australia", "Brasil", "Canadá", "China", "Corea del Sur", "Estados Unidos", "Francia", "India", "Indonesia", "Italia", "Japón", "México", "Reino Unido", "Federación de Rusia", "Sudáfrica", "Turquía")
 
 for (archivo in archivos){
   archivo <- str_sub(archivo, end = -5)
   
+  # Se crea el data frame que almacenará la serie temporal del área selvática para los paises del G20
+  if (archivo == "Area_selvatica"){
+    Datos_temporales_area_selvatica <- get(archivo) %>% 
+      rename("pais" = "Country Name") %>% 
+      mutate(pais = ifelse(pais == "Corea, República de", "Corea del Sur", pais)) %>% 
+      filter(pais %in% G20)
+  }
+  
+  # Se imputa el dato de 2021 del porcentaje del agro en el PBI para Canadá
+  if (archivo == "Participacion_del_agro_PBI"){
+    assign(archivo, get(archivo) %>% 
+      mutate(`2021` = ifelse(`Country Name` == "Canadá", (`2020`+`2019`+`2018`+`2017`+`2016`)/5, `2021`)))
+  }
+  
+  # A cada data frame original se le corrigen los errores, se filtra por los paises del G20 y nos quedamos unicamente con las columnas del pais y de la variable en cuestión para el año 2021
   assign(archivo, 
          get(archivo) %>% 
-           filter(`Country Name` %in% G20) %>% 
            rename("pais" = "Country Name") %>%
+           mutate(pais = ifelse(pais == "Corea, República de", "Corea del Sur", pais)) %>%
+           filter(pais %in% G20) %>% 
            rename_with(~archivo, .cols = "2021") %>% 
            select("pais", all_of(archivo)))            
-    
-}
-
+}    
 ```
 
 Creamos el data frame combinado con los datos de los 19 paises
 
 ```{r}
-Datos_limpios <- bind_cols(Area_de_tierra, Area_selvatica, Consumo_de_fertilizantes, Participacion_del_agro_PBI, Rendimiento_cereales, Tierra_utilizada_para_la_producción_de_cereales, Tierras_agricolas, Tierras_destinadas_al_cultivo_de_manera_permanente) %>% 
-  select(c(1, seq(2,16,2))) %>% 
+# Se crea el nuevo data frame con las 7 variables para los 19 países
+Datos_limpios <- bind_cols(Area_de_tierra, Area_selvatica, Consumo_de_fertilizantes, Participacion_del_agro_PBI, Rendimiento_cereales, Tierra_utilizada_para_la_producción_de_cereales) %>% 
+  select(c(1, seq(2,12,2))) %>% 
   rename(pais = pais...1)
 
+# Se eliminan del ambiente de trabajo estos data frames que ya no son útiles
+rm(Area_de_tierra, Area_selvatica, Consumo_de_fertilizantes, Participacion_del_agro_PBI, Rendimiento_cereales, Tierra_utilizada_para_la_producción_de_cereales)
 ```
 
-Se carga el data set World del paquete Spdata para poder graficar mapas.
+Se carga el data set World del paquete Spdata para agregar los datos de georreferenciación con los que poder contruir mapas.
 
 ```{r}
 data(world)
@@ -75,14 +138,23 @@ Cómo el data frame world tiene los nombres en inglés, crearemos una nueva colu
 ```{r}
 Datos_limpios$pais_ingles <- c("Argentina", "Australia", "Brazil", "Canada", "China", "Germany", "France", "United Kingdom", "Indonesia", "India", "Italy", "Japan", "Republic of Korea","Mexico", "Russian Federation", "Saudi Arabia", "Turkey", "United States", "South Africa")
 
-Datos_limpios <- Datos_limpios %>% 
-  mutate(pais = ifelse(pais == "Corea, República de", "Corea del Sur", pais))
 ```
 
 Finalmente creamos el data frame que nos permitirá realizar los mapas
 
 ```{r}
-datos_espaciales <- left_join(world, Datos_limpios, by = join_by("name_long" == "pais_ingles"))
+G20_agro <- right_join(world[,c(2,11)], Datos_limpios, by = join_by("name_long" == "pais_ingles"))
+```
+
+Una vez terminado el proceso de limpieza y ordenamiento, almacenaremos los conjuntos de datos limpios en 2 archivos `.csv` en la carpeta `datos_limpios`
+
+```{r}
+setwd(here::here())
+
+write.csv(G20_agro, file = "datos_limpios/G20_agro.csv", row.names = FALSE)
+
+write.csv(Datos_temporales_area_selvatica, file = "datos_limpios/Area_selvatica.csv", row.names = FALSE)
+
 ```
 
 ## Análisis univariado
@@ -90,7 +162,7 @@ datos_espaciales <- left_join(world, Datos_limpios, by = join_by("name_long" == 
 ### Área de tierra
 
 ```{r}
-Datos_limpios %>% 
+G20_agro %>% 
   summarise(Mínimo = min(`Area_de_tierra`),
             Mediana = median(`Area_de_tierra`),
             Promedio = mean(`Area_de_tierra`),
@@ -100,7 +172,7 @@ Datos_limpios %>%
 ```
 
 ```{r}
-Datos_limpios %>% 
+G20_agro %>% 
   ggplot() + 
   aes(x = `Area_de_tierra`) +
   geom_histogram(breaks = seq(0,20000000,5000000), fill="dodgerblue", color = "black") +
@@ -111,7 +183,7 @@ Datos_limpios %>%
 ### Área Selvática
 
 ```{r}
-Datos_limpios %>% 
+G20_agro %>% 
   summarise(Mínimo = min(`Area_selvatica`),
             Mediana = median(`Area_selvatica`),
             Promedio = mean(`Area_selvatica`),
@@ -121,7 +193,7 @@ Datos_limpios %>%
 ```
 
 ```{r}
-Datos_limpios %>% 
+G20_agro %>% 
   ggplot() + 
   aes(x = `Area_selvatica`) +
   geom_histogram(breaks = seq(0,80,10), fill="dodgerblue", color = "black") +
@@ -131,7 +203,7 @@ Datos_limpios %>%
 ### Participación del agro en el PBI
 
 ```{r}
-Datos_limpios %>% 
+G20_agro %>% 
   summarise(Mínimo = min(`Participacion_del_agro_PBI`, na.rm = T),
             Mediana = median(`Participacion_del_agro_PBI`, na.rm = T),
             Promedio = mean(`Participacion_del_agro_PBI`, na.rm = T),
@@ -141,7 +213,7 @@ Datos_limpios %>%
 ```
 
 ```{r}
-Datos_limpios %>% 
+G20_agro %>% 
   ggplot() + 
   aes(x = `Participacion_del_agro_PBI`) +
   geom_histogram(breaks = seq(0,20,4), fill="dodgerblue", color = "black") +
@@ -151,7 +223,7 @@ Datos_limpios %>%
 ### Tierra utilizada para la producción de cereales
 
 ```{r}
-Datos_limpios %>% 
+G20_agro %>% 
   summarise(Mínimo = min(`Tierra_utilizada_para_la_producción_de_cereales`, na.rm = T),
             Mediana = median(`Tierra_utilizada_para_la_producción_de_cereales`, na.rm = T),
             Promedio = mean(`Tierra_utilizada_para_la_producción_de_cereales`, na.rm = T),
@@ -161,7 +233,7 @@ Datos_limpios %>%
 ```
 
 ```{r}
-Datos_limpios %>% 
+G20_agro %>% 
   ggplot() + 
   aes(x = `Tierra_utilizada_para_la_producción_de_cereales`) +
   geom_histogram(breaks = seq(0,105000000,105000000/4), fill="dodgerblue", color = "black") +
@@ -170,7 +242,7 @@ Datos_limpios %>%
 
 ```{r}
 # Sin India y China
-Datos_limpios %>% 
+G20_agro %>% 
   filter(!(pais %in% c("India", "China"))) %>% 
   ggplot() + 
   aes(x = `Tierra_utilizada_para_la_producción_de_cereales`) +
@@ -181,7 +253,7 @@ Datos_limpios %>%
 ### Rendimiento de cereales
 
 ```{r}
-Datos_limpios %>% 
+G20_agro %>% 
   summarise(Mínimo = min(`Rendimiento_cereales`, na.rm = T),
             Mediana = median(`Rendimiento_cereales`, na.rm = T),
             Promedio = mean(`Rendimiento_cereales`, na.rm = T),
@@ -191,7 +263,7 @@ Datos_limpios %>%
 ```
 
 ```{r}
-Datos_limpios %>% 
+G20_agro %>% 
   ggplot() + 
   aes(x = `Rendimiento_cereales`) +
   geom_histogram(breaks = seq(0,9000,1500), fill="dodgerblue", color = "black") +
@@ -201,7 +273,7 @@ Datos_limpios %>%
 ### Consumo de fertilizantes
 
 ```{r}
-Datos_limpios %>% 
+G20_agro %>% 
   summarise(Mínimo = min(`Consumo_de_fertilizantes`, na.rm = T),
             Mediana = median(`Consumo_de_fertilizantes`, na.rm = T),
             Promedio = mean(`Consumo_de_fertilizantes`, na.rm = T),
@@ -211,7 +283,7 @@ Datos_limpios %>%
 ```
 
 ```{r}
-Datos_limpios %>% 
+G20_agro %>% 
   ggplot() + 
   aes(x = `Consumo_de_fertilizantes`) +
   geom_histogram(breaks = seq(0,400,100), fill="dodgerblue", color = "black") +
@@ -223,7 +295,7 @@ Datos_limpios %>%
 ### Rendimiento vs. consumo de fertilizante
 
 ```{r}
-Datos_limpios %>% 
+G20_agro %>% 
   ggplot() + 
   aes(x = `Consumo_de_fertilizantes`, y = `Rendimiento_cereales`) +
   geom_point() +
@@ -233,7 +305,7 @@ Datos_limpios %>%
 ### Rendimiento vs. Tierra cereales
 
 ```{r}
-Datos_limpios %>% 
+G20_agro %>% 
   ggplot() + 
   aes(x = `Tierra_utilizada_para_la_producción_de_cereales`, y = `Rendimiento_cereales`) +
   geom_point() +
@@ -243,7 +315,7 @@ Datos_limpios %>%
 ### Consumo de fertilizantes vs. Tierra cereales
 
 ```{r}
-Datos_limpios %>% 
+G20_agro %>% 
   ggplot() + 
   aes(x = `Tierra_utilizada_para_la_producción_de_cereales`, y = `Consumo_de_fertilizantes`) +
   geom_point() +
@@ -253,68 +325,54 @@ Datos_limpios %>%
 ## Contrucción de mapas
 
 ```{r}
-tmap_mode("view")
-
-datos_espaciales %>% 
-  filter(pais %in% c(G20, "Corea del Sur")) %>% 
-  tm_shape() + 
-  tm_fill(id = "ID", col = "Consumo_de_fertilizantes", n = 7 ,palette = get_brewer_pal("YlOrBr", contrast = c(0.3, 0.7)), alpha = 0.75) +
-  tm_borders("black", lwd = 2) + 
-  tm_basemap("OpenStreetMap")
-```
-
-```{r}
-g20_espacial = datos_espaciales %>% 
-  filter(pais %in% c(G20, "Corea del Sur"))
-
 textos <- paste0(
   "<b>País:</b> ", 
-  g20_espacial$pais, 
+  G20_agro$pais, 
   "<br><b>Participación del agro en el PBI:</b> ",
-  paste0(format(round(g20_espacial$Participacion_del_agro_PBI, 2), decimal.mark = ","), "%"),
+  paste0(format(round(G20_agro$Participacion_del_agro_PBI, 2), decimal.mark = ","), "%"),
   "<br><b>Sup. en km<sup>2</sup>:</b> ", 
-  format(round(g20_espacial$Area_de_tierra,0), big.mark = "."),
+  format(round(G20_agro$Area_de_tierra,0), big.mark = "."),
   "<br><b>Área selvática:</b> ",
-  paste0(format(round(g20_espacial$Area_selvatica, 2), decimal.mark = ","), "%"),
+  paste0(format(round(G20_agro$Area_selvatica, 2), decimal.mark = ","), "%"),
   "<br><b>Superficie cereales (ha):</b> ",
-  format(g20_espacial$Tierra_utilizada_para_la_producción_de_cereales, big.mark = "."),
+  format(G20_agro$Tierra_utilizada_para_la_producción_de_cereales, big.mark = "."),
   "<br><b>Rendimiento cereales (kg/ha):</b> ",
-  format(g20_espacial$Rendimiento_cereales, big.mark = ".", decimal.mark = ","),
+  format(G20_agro$Rendimiento_cereales, big.mark = ".", decimal.mark = ","),
   "<br><b>Consumo de fertilizantes (kg/ha):</b> ",
-  format(round(g20_espacial$Consumo_de_fertilizantes, 2), decimal.mark = ",")
+  format(round(G20_agro$Consumo_de_fertilizantes, 2), decimal.mark = ",")
 )
 
 paleta1 <- colorNumeric(
-  palette = c("gold3", "firebrick"), 
-  domain = g20_espacial$Area_de_tierra
+  palette = get_brewer_pal("Greens", n = 20, contrast = c(0.2, 0.9), plot = F), 
+  domain = G20_agro$Area_de_tierra
 )
 
 paleta2 <- colorNumeric(
-  palette = c("gold3", "firebrick"), 
-  domain = g20_espacial$Consumo_de_fertilizantes
+  palette = get_brewer_pal("Greens", n = 20, contrast = c(0.2, 0.9), plot = F), 
+  domain = G20_agro$Consumo_de_fertilizantes
 )
 
 paleta3 <- colorNumeric(
-  palette = c("gold3", "firebrick"),  
-  domain = g20_espacial$Rendimiento_cereales
+  palette = get_brewer_pal("Greens", n = 20, contrast = c(0.2, 0.9), plot = F),  
+  domain = G20_agro$Rendimiento_cereales
 )
 
 paleta4 <- colorNumeric(
-  palette = c("gold3", "#1f8a00"),  
-  domain = g20_espacial$Area_selvatica
+  palette = get_brewer_pal("Greens", n = 20, contrast = c(0.2, 0.9), plot = F),  
+  domain = G20_agro$Area_selvatica
 )
 
 paleta5 <- colorNumeric(
-  palette = c("gold3", "firebrick"),  
-  domain = g20_espacial$Participacion_del_agro_PBI
+  palette = get_brewer_pal("Greens", n = 20, contrast = c(0.2, 0.9), plot = F),  
+  domain = G20_agro$Participacion_del_agro_PBI
 )
 
 paleta6 <- colorNumeric(
   palette = c("gold3", "firebrick"),  
-  domain = g20_espacial$Tierra_utilizada_para_la_producción_de_cereales
+  domain = G20_agro$Tierra_utilizada_para_la_producción_de_cereales
 )
 
-g20_espacial %>% 
+G20_agro %>% 
   leaflet() %>%
   addPolygons(
     color = ~paleta5(Participacion_del_agro_PBI), 
@@ -362,6 +420,66 @@ g20_espacial %>%
     overlayGroups = c("Participación del agro en el PBI", "Superficie total", "Área selvática", "Superficie cereales", "Rendimiento cereales", "Consumo de fertilizantes"),
     options = layersControlOptions(collapsed = FALSE)
   ) %>%
-  addProviderTiles("Jawg.Dark")
+  addProviderTiles("CartoDB.DarkMatterNoLabels")
 
+```
+
+## Evolución del área selvática
+
+```{r}
+# Primero vamos a revisar a partir de que año contamos con información para todos los países  
+colSums(is.na(Datos_temporales_area_selvatica)) # 1992 a 2021
+
+# Nos quedamos únicamente con las variables de interés
+Datos_temporales_area_selvatica <- Datos_temporales_area_selvatica %>% 
+  select(pais, 37:66)
+```
+
+### Gráfico de líneas
+
+Para la construcción del gráfico de líneas nos será más util contar con el data set en formato largo y no en formato ancho
+
+```{r}
+Datos_temporales_area_selvatica_largo = pivot_longer(data = Datos_temporales_area_selvatica, cols = 2:31, names_to = "Año", values_to = "Area_selvatica")
+```
+
+```{r}
+Datos_temporales_area_selvatica_largo %>% 
+  ggplot() + 
+  aes(x = as.numeric(Año), y = Area_selvatica, color = pais) +
+  geom_point(size = 2) +
+  geom_line(lwd = 1.5) +
+  scale_color_manual(values = c("Brasil" = "red", "Indonesia" = "blue"), name = "País") +
+  theme_bw()
+```
+
+```{r}
+Datos_temporales_area_selvatica_largo <- Datos_temporales_area_selvatica_largo %>% 
+  group_by(Año) %>% 
+  mutate("order" = rank(Area_selvatica, ties.method = "first")) %>% 
+  arrange(Año)
+
+#setwd(here::here())
+#g <- 
+  ggplot(data = Datos_temporales_area_selvatica_largo) +
+  aes(x = order, y = Area_selvatica, fill = pais) +
+  geom_col() +
+  geom_text(aes(label = pais), hjust = 0) +
+  scale_y_continuous(limits = c(0,80)) +
+  labs(title = 'Año: {frame_time}', 
+       x = 'País', 
+       y = 'Porcentaje de área selvática') +
+  theme_bw() +
+  theme(legend.position = "none") +
+  coord_flip() +
+  theme(axis.title = element_text(face = "bold")) +
+  transition_time(as.integer(Año)) + #Variable de Transición
+  ease_aes('linear') #Tipo de Transición
+
+# animacion <- animate(g, 
+#                      renderer = gifski_renderer(), 
+#                      nframes = 50) # Cantidad de fotogramas
+# 
+# anim_save(filename = "imagenes/area_selvatica.gif",
+#           animation = animacion)
 ```
