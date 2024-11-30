@@ -14,6 +14,10 @@ format:
       dark: darkly
       light: lumen
     code-fold: true
+    css: |
+      body {
+        text-align: justify;
+        }
 editor: visual
 editor_options: 
   chunk_output_type: console
@@ -54,7 +58,6 @@ A continuación se presentan las librerías necesarias para la lectura, limpieza
 library(readxl)
 library(tidyverse)
 library(leaflet)
-library(sf)
 library(spData)
 library(tmaptools)
 library(htmltools)
@@ -645,7 +648,7 @@ g <-
   geom_text(aes(label = pais), hjust = 0) +
   scale_x_continuous(breaks = NULL) +
   scale_y_continuous(limits = c(0,80)) +
-  scale_fill_manual(values = get_brewer_pal("Set1", n = 19, plot = F)) +
+  scale_fill_manual(values = rep(get_brewer_pal("Accent", n = 7, plot = F), each = 3)) +
   labs(title = 'Área selvática de cada país en el año: {frame_time}', 
        x = '', 
        y = 'Porcentaje de área selvática') +
