@@ -1,4 +1,4 @@
-# Tarea 1: lectura y ordenamiento de datos
+# Tarea 2: Análisis del sector agro para los países del G20
 Este repositorio contiene todo lo referido a la segunda tarea de Análisis Inteligente de Datos.
 
 ## Distribución de carpetas
