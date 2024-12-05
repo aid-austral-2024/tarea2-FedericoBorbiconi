@@ -14,10 +14,6 @@ format:
       dark: darkly
       light: lumen
     code-fold: true
-    css: |
-      body {
-        text-align: justify;
-        }
 editor: visual
 editor_options: 
   chunk_output_type: console
@@ -25,6 +21,13 @@ execute:
   warning: false
   message: false
 ---
+
+```{css}
+#| echo: false
+p {
+  text-align: justify
+}
+```
 
 ## Introducción
 
@@ -72,8 +75,10 @@ library(plotly)
 Se leen mediante la función `readxl` los 6 conjuntos de datos almacenados en archivos `.xls` en la carpeta `datos_crudos`
 
 ```{r}
+# Se listan los archivos de la carpeta datos_crudos
 archivos = list.files("datos_crudos")
 
+# Se realiza la lectura, almacenando cada archivo de excel en un data frame de R con su mismo nombre
 for (archivo in archivos){
   assign(str_sub(archivo, end = -5),
          read_excel(paste0("datos_crudos/",archivo), 
@@ -121,7 +126,7 @@ for (archivo in archivos){
 }    
 ```
 
-Creamos el data frame combinado con los datos de los 19 paises
+Creamos el data frame combinado con los datos de 2021 para los 19 paises
 
 ```{r}
 # Se crea el nuevo data frame con las 7 variables para los 19 países
@@ -155,7 +160,6 @@ G20_agro <- right_join(world[,c(2,11)], Datos_limpios, by = join_by("name_long" 
 Una vez terminado el proceso de limpieza y ordenamiento, almacenaremos los conjuntos de datos limpios en 2 archivos `.csv` en la carpeta `datos_limpios`
 
 ```{r}
-setwd(here::here())
 
 write.csv(G20_agro, file = "datos_limpios/G20_agro.csv", row.names = FALSE)
 
@@ -201,19 +205,20 @@ ggplotly(g, tooltip = "y")
 <br> El siguiente mapa permite visualizar claramente que hay ciertos países que se escapan de la tendencia mencionada anteriormente, para los cuales el sector agro tiene un penso considerable en su economía. Si lugar a dudas destacan en primer lugar India y Filipinas con una participación del agro en el PBI del 17% y 13% respectivamente, y en segundo lugar Argentina, China y Brasil con una participación alrededor del 7%.
 
 ```{r}
+# Construcción de la etiqueta
 texto_PBI <- paste0(
   "<b>País:</b> ", 
   G20_agro$pais, 
   "<br><b>Participación del agro en el PBI:</b> ",
   paste0(format(round(G20_agro$Participacion_del_agro_PBI, 2), decimal.mark = ","), "%"))
 
-
+# Definición de la paleta de colores
 paleta_PBI <- colorNumeric(
   palette = get_brewer_pal("Greens", n = 20, contrast = c(0.2, 0.9), plot = F),  
   domain = G20_agro$Participacion_del_agro_PBI
 )
 
-
+# Construcción del mapa con leaflet
 G20_agro %>% 
   leaflet() %>%
   addPolygons(
@@ -261,19 +266,20 @@ ggplotly(g, tooltip = "y")
 <br> El mapa nuevamente permite identificar cuáles son los países con la mayor extensión territorial, donde vale la pena destacar que en el G20 están incluidos los 8 países de mayor extensión territorial del mundo (Rusia, Canadá, Estados Unidos, China, Brasil, Australia, India y Argentina)
 
 ```{r}
+# Construción de la etiqueta
 texto_Area <- paste0(
   "<b>País:</b> ", 
   G20_agro$pais, 
   "<br><b>Sup. en km<sup>2</sup>:</b> ", 
   format(round(G20_agro$Area_de_tierra,0), big.mark = "."))
 
-
+# definición de la paleta de colores
 paleta_Area <- colorNumeric(
   palette = get_brewer_pal("Greens", n = 20, contrast = c(0.2, 0.9), plot = F),  
   domain = G20_agro$Area_de_tierra
 )
 
-
+# Contrucción del mapa con leaflet
 G20_agro %>% 
   leaflet() %>%
   addPolygons(
@@ -318,19 +324,20 @@ ggplotly(g, tooltip = "y")
 <br> Visualizando el mapa se puede observar que Japón y Corea del Sur llevan la delantera con más de un 64% de área selvática, y centandonos en países de gran extensión territorial destacan Brasil y Rusia con 59% y 49% de área selvática respectivamente. Por el otro lado, se tiene a Arabia Saudí que prácticamente no tiene área selvática al ser un territorio mayormente desértico y en segundo lugar Argentina, donde el área selvática es de apenas el 10,4%.
 
 ```{r}
+# Construcción de la etiqueta
 texto_selva <- paste0(
   "<b>País:</b> ", 
   G20_agro$pais, 
   "<br><b>Área selvática:</b> ",
   paste0(format(round(G20_agro$Area_selvatica, 2), decimal.mark = ","), "%"))
 
-
+# Definición de la paleta de colores
 paleta_selva <- colorNumeric(
   palette = get_brewer_pal("Greens", n = 20, contrast = c(0.2, 0.9), plot = F),  
   domain = G20_agro$Area_selvatica
 )
 
-
+# Construcción del mapa con leaflet
 G20_agro %>% 
   leaflet() %>%
   addPolygons(
@@ -376,19 +383,20 @@ ggplotly(g, tooltip = "y")
 <br> Al analizar el mapa, destacan claramente China e India los cuales cosecharon más de 100 millones de $ha$ de cereales durante 2021. Este comportamiento quizá esté vinculado a la gran cantidad de población de los mismos y la necesidad de contar con alimentos para la misma.
 
 ```{r}
+# Construcción de la etiqueta
 texto_cereales <- paste0(
   "<b>País:</b> ", 
   G20_agro$pais, 
   "<br><b>Superficie cereales (ha):</b> ",
   format(G20_agro$Tierra_utilizada_para_la_producción_de_cereales, big.mark = "."))
 
-
+# Definición de la paleta de colores
 paleta_cereales <- colorNumeric(
   palette = get_brewer_pal("Greens", n = 20, contrast = c(0.2, 0.9), plot = F),  
   domain = G20_agro$Tierra_utilizada_para_la_producción_de_cereales
 )
 
-
+# Creación del mapa con leaflet
 G20_agro %>% 
   leaflet() %>%
   addPolygons(
@@ -433,19 +441,20 @@ ggplotly(g, tooltip = "y")
 <br> El siguiente mapa permite visualizar que Estados Unidos es el país con un mayor rendimiento, seguido por la mayoría de países de Europa. Por otro lado, destacan países como Rusia, Canadá y Australia que a pesar de ser de los principales exportadores de cereales del mundo, tienen bajos rendimientos en comparación al resto de los países.
 
 ```{r}
+# Creación de la etiqueta
 texto_rendimiento <- paste0(
   "<b>País:</b> ", 
   G20_agro$pais, 
   "<br><b>Rendimiento cereales (kg/ha):</b> ",
   format(G20_agro$Rendimiento_cereales, big.mark = ".", decimal.mark = ","))
 
-
+# Definición de la paleta de colores
 paleta_rendimiento <- colorNumeric(
   palette = get_brewer_pal("Greens", n = 20, contrast = c(0.2, 0.9), plot = F),  
   domain = G20_agro$Rendimiento_cereales
 )
 
-
+# Creación del mapa con leaflet
 G20_agro %>% 
   leaflet() %>%
   addPolygons(
@@ -490,19 +499,20 @@ ggplotly(g, tooltip = "y")
 <br> Justamente el mapa permite identificar que los usuarios más intensivos son los productores de Brasil y de China y por el contrario destacan los productores argentinos y los rusos, que utilizan solo 62 $kg/ha$ y 25 $kg/ha$ respectivamente.
 
 ```{r}
+# Creación de la etiqueta
 texto_fertilizante <- paste0(
   "<b>País:</b> ", 
   G20_agro$pais, 
   "<br><b>Consumo de fertilizantes (kg/ha):</b> ",
   format(round(G20_agro$Consumo_de_fertilizantes, 2), decimal.mark = ","))
 
-
+# Definición de la paleta de colores
 paleta_fertilizante <- colorNumeric(
   palette = get_brewer_pal("Greens", n = 20, contrast = c(0.2, 0.9), plot = F),  
   domain = G20_agro$Consumo_de_fertilizantes
 )
 
-
+# Construcción del mapa con leaflet
 G20_agro %>% 
   leaflet() %>%
   addPolygons(
@@ -590,6 +600,8 @@ ggplotly(g, tooltip = "text")
 Finalmente se propone realizar un análisis acerca de la evolución de la superficie selvática de los países, teniendo en cuenta que la Unión Europea lanzó importantes leyes centradas en la protección de los bosques y la restauración de los ecosistemas, las cuales pueden tener un impacto sumamente significativo en las actividades agrícolas.
 
 ```{r}
+#| results: "hide"
+
 # Primero vamos a revisar a partir de que año contamos con información para todos los países  
 colSums(is.na(Datos_temporales_area_selvatica)) # 1992 a 2021
 
@@ -667,7 +679,7 @@ anim_save(filename = "imagenes/area_selvatica.gif",
           animation = animacion)
 ```
 
-![](../imagenes/area_selvatica.gif){fig-align="center"}
+![](imagenes/area_selvatica.gif){fig-align="center"}
 
 ## Conclusiones
 
