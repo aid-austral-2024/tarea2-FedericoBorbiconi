@@ -51,7 +51,7 @@ En particular, en esta ocasión nos centraremos en estudiar la situación del se
 
 -   **Consumo de fertilizantes:** Consumo de fertilizantes medidos en $kg/ha$ de tierra cultivable
 
-El análisis principal estará centrado en la situación registrada en el año 2021, último año para el cual se cuentan con registros completos para la mayoría de países.
+El análisis principal estará centrado en la situación registrada en el año 2021, último año para el cual se cuentan con registros completos para la mayoría de países y además se presentará un breve análisis de la evolución del área selvática durante los últimos 30 años.
 
 ## Librerías
 
@@ -92,7 +92,7 @@ Lo primero que se identificó al analizar los conjuntos de datos es que Corea de
 
 A su vez, se tiene que Canadá no tiene datos de la participación del agro en el PBI para 2021, por lo que dicho dato se imputará considerando el registro de los últimos 5 años ya que se entiende que no es un dato que pueda tener gran variabilidad en un corto período de tiempo.
 
-Una vez corregidos estos problemas, se crea un data set que conserva los datos de todos los años de las mediciones del área selvática para los 19 países del G20 y para todos los data sets (incluido el de área selvática) solo nos quedamos con el nombre del país y su medición en 2021.
+Una vez corregidos estos problemas, se crea un data set que conserva los datos de todas las mediciones del área selvática para los 19 países del G20 a lo largo de los años y para todos los data sets (incluido el de área selvática) solo nos quedamos con el nombre del país y su medición en 2021.
 
 ```{r}
 # Se define un vector con los nombres de los países que conforman el G20
@@ -144,7 +144,7 @@ Se carga el data set World del paquete Spdata para agregar los datos de georrefe
 data(world)
 ```
 
-Cómo el data frame world tiene los nombres en inglés, crearemos una nueva columna de nuestro data frame que contenga los nombres en inglés para poder vincularlos.
+Cómo el data frame World tiene los nombres de los países en inglés, crearemos una nueva columna de nuestro data frame que también contenga los nombres de los países en inglés para poder vincularlos.
 
 ```{r}
 Datos_limpios$pais_ingles <- c("Argentina", "Australia", "Brazil", "Canada", "China", "Germany", "France", "United Kingdom", "Indonesia", "India", "Italy", "Japan", "Republic of Korea","Mexico", "Russian Federation", "Saudi Arabia", "Turkey", "United States", "South Africa")
@@ -202,7 +202,7 @@ g <- Datos_limpios %>%
 ggplotly(g, tooltip = "y")
 ```
 
-<br> El siguiente mapa permite visualizar claramente que hay ciertos países que se escapan de la tendencia mencionada anteriormente, para los cuales el sector agro tiene un penso considerable en su economía. Si lugar a dudas destacan en primer lugar India y Filipinas con una participación del agro en el PBI del 17% y 13% respectivamente, y en segundo lugar Argentina, China y Brasil con una participación alrededor del 7%.
+<br> El siguiente mapa permite visualizar claramente que hay ciertos países que se escapan de la tendencia mencionada anteriormente, para los cuales el sector agro tiene un penso considerable en su economía. Sin lugar a dudas destacan en primer lugar India e Indonesia con una participación del agro en el PBI del 17% y 13% respectivamente, y en segundo lugar Argentina, China y Brasil con una participación alrededor del 7%.
 
 ```{r}
 # Construcción de la etiqueta
@@ -409,7 +409,7 @@ G20_agro %>%
 
 ### Rendimiento de cereales
 
-Al analizar el rendimiento de los cereales se ve que en promedio es de 5180 $kg/ha$ y que en promedio los rendimientos de cada país se desvían del mismo en 1736 $kg/ha$. Dicha variabilidad en los rendimientos puede debersea múltiples factores, entre los cuales están los factores climáticos, el cultivo principal y el consumo de fertilizantes.
+Al analizar el rendimiento de los cereales se ve que en promedio es de 5180 $kg/ha$ y que en promedio los rendimientos de cada país se desvían del mismo en 1736 $kg/ha$. Dicha variabilidad en los rendimientos puede deberse a múltiples factores, entre los cuales están los factores climáticos, el cultivo principal y el consumo de fertilizantes.
 
 ```{r}
 kable(Datos_limpios %>% 
@@ -467,7 +467,7 @@ G20_agro %>%
 
 ### Consumo de fertilizantes
 
-En cuanto al uso de fertilizantes, puede verse una situación dispar, en donde la mitad de los países utilizan 130 $kg/ha$ o menos, mientras que pocos países utilizan una cantidad mucho más alta de más de 250 $kg/ha$ o incluso más de 300 $kg/ha$.
+En cuanto al uso de fertilizantes, puede verse una situación dispar, en donde la mitad de los países utilizan 130 $kg/ha$ o menos, mientras que pocos países utilizan una cantidad mucho mayor, de más de 250 $kg/ha$ o incluso más de 300 $kg/ha$.
 
 ```{r}
 kable(Datos_limpios %>% 
@@ -525,7 +525,7 @@ G20_agro %>%
 
 ## Análisis bivariado
 
-En esta sección se propone un análisis en donde se busca entender/identificar patrones en relación al rendimiento de los cereales, la superficie destinada a la roducción de los mismos y el consumo de fertilizantes.
+En esta sección se propone un análisis en donde se busca entender/identificar patrones en relación al rendimiento de los cereales, la superficie destinada a la producción de los mismos y el consumo de fertilizantes.
 
 ### Rendimiento vs. Consumo de fertilizante
 
