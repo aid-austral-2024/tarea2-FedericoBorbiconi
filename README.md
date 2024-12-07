@@ -48,4 +48,6 @@ Los paquetes utilizados en la ejecucion del son:
 -   **kableExtra:** para mejorar la visualización de las tablas en el reporte.
 -   **scales:** para modificar las escalas de los gráficos.
 -   **plotly:** para convertir gráficos de ggplot2 a gráficos interactivos
-  
+
+## Aviso importante
+Dado el tamaño del archivo *'index.html'* github no es capaz de mostrar una previsualización del mismo. Por tal motivo, al ingresar al repositorio estará visible el contenido de este readme. 
